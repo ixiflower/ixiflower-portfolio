@@ -60,6 +60,29 @@ export default function Hero() {
 
       {/* Content */}
       <div className="relative z-10 text-center max-w-3xl w-full">
+        {/* Avatar */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.05 }}
+          className="mb-6 sm:mb-8 flex justify-center"
+        >
+          <div className="relative group">
+            {/* Glow ring */}
+            <div className="absolute -inset-2 sm:-inset-3 rounded-full bg-accent/20 blur-xl group-hover:bg-accent/30 transition-all duration-500" />
+            {/* Animated border ring */}
+            <div className="absolute -inset-1 sm:-inset-1.5 rounded-full border-2 border-accent/40 animate-spin-slow" style={{ borderRightColor: "transparent" }} />
+            {/* Image container */}
+            <div className="relative w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-full overflow-hidden border-2 border-accent/30 ring-2 ring-accent/10 group-hover:border-accent/60 transition-all duration-500">
+              <img
+                src="/avatar.jpg"
+                alt={personalData.handle}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+              />
+            </div>
+          </div>
+        </motion.div>
+
         {/* Greeting */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
