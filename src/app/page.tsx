@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
@@ -13,19 +12,10 @@ import Footer from "@/components/Footer";
 const Scene = dynamic(() => import("@/components/Scene"), { ssr: false });
 
 export default function Home() {
-  const [mouse, setMouse] = useState({ x: 0, y: 0 });
-
-  const handleMouse = useCallback(
-    (e: React.MouseEvent) => {
-      setMouse({ x: e.clientX, y: e.clientY });
-    },
-    []
-  );
-
   return (
-    <div onMouseMove={handleMouse} className="relative min-h-dvh">
-      {/* Background canvas */}
-      <Scene mouseX={mouse.x} mouseY={mouse.y} />
+    <div className="relative min-h-dvh">
+      {/* Three.js ASCII donat background */}
+      <Scene />
 
       {/* Foreground content */}
       <div className="relative z-10">
