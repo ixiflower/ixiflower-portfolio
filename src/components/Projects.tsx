@@ -69,7 +69,7 @@ export default function Projects() {
 
               {/* Tags */}
               <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-5">
-                {project.tags.slice(0, 4).map((tag) => (
+                {project.tech.slice(0, 4).map((tag) => (
                   <span
                     key={tag}
                     className="px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-mono bg-zinc-800/50 text-muted-foreground border border-border/30"
@@ -77,9 +77,9 @@ export default function Projects() {
                     {tag}
                   </span>
                 ))}
-                {project.tags.length > 4 && (
+                {project.tech.length > 4 && (
                   <span className="px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-mono text-muted-foreground/50">
-                    +{project.tags.length - 4}
+                    +{project.tech.length - 4}
                   </span>
                 )}
               </div>
@@ -97,9 +97,9 @@ export default function Projects() {
                     Source
                   </a>
                 )}
-                {project.demo && (
+                {project.live && (
                   <a
-                    href={project.demo}
+                    href={project.live}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"

@@ -16,8 +16,9 @@ export default function Header() {
   }, []);
 
   // Close mobile menu on nav
-  const handleNav = (id: string) => {
+  const handleNav = (href: string) => {
     setMenuOpen(false);
+    const id = href.replace("#", "");
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth" });
   };
@@ -32,7 +33,7 @@ export default function Header() {
         {/* Logo */}
         <a
           href="#hero"
-          onClick={(e) => { e.preventDefault(); handleNav("hero"); }}
+          onClick={(e) => { e.preventDefault(); handleNav("#hero"); }}
           className="text-base sm:text-lg font-semibold tracking-tight hover:text-accent transition-colors"
         >
           <span className="gradient-text">{`{ ixi }`}</span>
@@ -41,9 +42,9 @@ export default function Header() {
         {/* Desktop nav */}
         <ul className="hidden md:flex items-center gap-6 lg:gap-8">
           {navLinks.map((link) => (
-            <li key={link.id}>
+            <li key={link.href}>
               <button
-                onClick={() => handleNav(link.id)}
+                onClick={() => handleNav(link.href)}
                 className="text-xs lg:text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
               >
                 {link.label}
@@ -95,9 +96,9 @@ export default function Header() {
               </div>
               <ul className="flex flex-col p-5 gap-1">
                 {navLinks.map((link) => (
-                  <li key={link.id}>
+                  <li key={link.href}>
                     <button
-                      onClick={() => handleNav(link.id)}
+                      onClick={() => handleNav(link.href)}
                       className="w-full text-left px-4 py-3 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors duration-200"
                     >
                       {link.label}
