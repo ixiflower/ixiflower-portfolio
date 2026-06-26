@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useEffect, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
-// ── Soft circle particle texture ──
+// ── Soft circle texture ──
 function createParticleTexture(): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = 64;
@@ -22,7 +22,7 @@ function createParticleTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-// ── Rasterize text to particle positions ──
+// ── Rasterize text ──
 function rasterizeText(text: string, maxCount: number, spread: number): THREE.Vector3[] {
   const size = 256;
   const canvas = document.createElement("canvas");
@@ -36,7 +36,6 @@ function rasterizeText(text: string, maxCount: number, spread: number): THREE.Ve
   ctx.textBaseline = "middle";
   ctx.fillStyle = "#fff";
   ctx.fillText(text, size / 2, size / 2);
-
   const data = ctx.getImageData(0, 0, size, size).data;
   const pixels: number[] = [];
   for (let y = 0; y < size; y++) {
@@ -44,12 +43,10 @@ function rasterizeText(text: string, maxCount: number, spread: number): THREE.Ve
       if (data[(y * size + x) * 4] > 128) pixels.push(x, y);
     }
   }
-
   const step = Math.max(2, Math.floor(pixels.length / 2 / maxCount));
   const cx = size / 2;
   const cy = size / 2;
   const result: THREE.Vector3[] = [];
-
   for (let i = 0; i < pixels.length && result.length < maxCount; i += step * 2) {
     result.push(
       new THREE.Vector3(
@@ -62,7 +59,7 @@ function rasterizeText(text: string, maxCount: number, spread: number): THREE.Ve
   return result;
 }
 
-// ── Generate torus ring ──
+// ── Ring ──
 function generateRing(count: number, radius: number, tube: number, twist: number): THREE.Vector3[] {
   const pts: THREE.Vector3[] = [];
   for (let i = 0; i < count; i++) {
@@ -80,7 +77,7 @@ function generateRing(count: number, radius: number, tube: number, twist: number
   return pts;
 }
 
-// ── Orbit ring ──
+// ── Orbit ──
 function generateOrbit(count: number, radius: number, spreadZ: number): THREE.Vector3[] {
   const pts: THREE.Vector3[] = [];
   for (let i = 0; i < count; i++) {
@@ -95,18 +92,16 @@ function generateOrbit(count: number, radius: number, spreadZ: number): THREE.Ve
 function generateStars(count: number, bound: number): THREE.Vector3[] {
   const pts: THREE.Vector3[] = [];
   for (let i = 0; i < count; i++) {
-    pts.push(
-      new THREE.Vector3(
-        (Math.random() - 0.5) * bound,
-        (Math.random() - 0.5) * bound,
-        (Math.random() - 0.5) * bound * 0.4 - 8
-      )
-    );
+    pts.push(new THREE.Vector3(
+      (Math.random() - 0.5) * bound,
+      (Math.random() - 0.5) * bound,
+      (Math.random() - 0.5) * bound * 0.4 - 8
+    ));
   }
   return pts;
 }
 
-// ── Color helper: gray → purple gradient via position ──
+// ── Gray → Purple gradient ──
 function grayToPurple(vecs: THREE.Vector3[], s: number): Float32Array {
   const c = new Float32Array(vecs.length * 3);
   const purple = new THREE.Color(0.35, 0.15, 0.75);
@@ -123,18 +118,22 @@ function grayToPurple(vecs: THREE.Vector3[], s: number): Float32Array {
   return c;
 }
 
-// ── Make Points geometry from vector array ──
+// ── Make Points geometry ──
 function makePointsGeo(vecs: THREE.Vector3[], colors?: Float32Array): THREE.BufferGeometry {
   const geo = new THREE.BufferGeometry();
   const pos = new Float32Array(vecs.length * 3);
-  vecs.forEach((v, i) => { pos[i * 3] = v.x; pos[i * 3 + 1] = v.y; pos[i * 3 + 2] = v.z; });
+  vecs.forEach((v, i) => {
+    pos[i * 3] = v.x;
+    pos[i * 3 + 1] = v.y;
+    pos[i * 3 + 2] = v.z;
+  });
   geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
   if (colors) geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   return geo;
 }
 
-// ── Particle Donat ──
-function ParticleDonat({ scale }: { scale: number }) {
+// ── Main particle system ──
+function ParticleDonat({ scale, scrollProgress }: { scale: number; scrollProgress: number }) {
   const groupRef = useRef<THREE.Group>(null);
   const textRef = useRef<THREE.Points>(null);
   const ringRef = useRef<THREE.Points>(null);
@@ -145,33 +144,25 @@ function ParticleDonat({ scale }: { scale: number }) {
   const s = Math.max(0.35, scale) * 0.85;
   const textCount = Math.round(3000 * s);
 
-  // ── Memoized geometries ──
   const { textVecs, textColors, ringVecs, ringColors, orbitVecs, starVecs } = useMemo(() => {
     const tv = rasterizeText("donat", textCount, 5.5 * s);
     const tc = grayToPurple(tv, s);
     const rv = generateRing(Math.round(600 * s), 4.2 * s, 0.6 * s, 0.4);
-    const rc = grayToPurple(rv.map(v => new THREE.Vector3(v.x / (4.2 * s), v.y / (4.2 * s), 0)), s);
-    const ov = generateOrbit(Math.round(120 * s), 5.8 * s, 1.5 * s);
-    const sv = generateStars(Math.round(300 * s), 30 * s + 10);
-
-    // Boost ring colors toward purple
-    const boostedColors = new Float32Array(rc.length);
-    const purpleBoost = new THREE.Color(0.4, 0.2, 0.8);
-    for (let i = 0; i < rc.length / 3; i++) {
-      const alpha = i / (rc.length / 3);
-      const col = purpleBoost.clone().lerp(new THREE.Color(0.6, 0.5, 0.8), 1 - alpha);
+    const rcGray = grayToPurple(rv.map(v => new THREE.Vector3(v.x / (4.2 * s), v.y / (4.2 * s), 0)), s);
+    const boostedColors = new Float32Array(rcGray.length);
+    for (let i = 0; i < rcGray.length / 3; i++) {
+      const alpha = i / (rcGray.length / 3);
+      const col = new THREE.Color(0.4, 0.2, 0.8).lerp(new THREE.Color(0.6, 0.5, 0.8), 1 - alpha);
       boostedColors[i * 3] = col.r * 0.9;
       boostedColors[i * 3 + 1] = col.g * 0.9;
       boostedColors[i * 3 + 2] = col.b * 0.9;
     }
-
+    const ov = generateOrbit(Math.round(120 * s), 5.8 * s, 1.5 * s);
+    const sv = generateStars(Math.round(300 * s), 30 * s + 10);
     return {
-      textVecs: tv,
-      textColors: tc,
-      ringVecs: rv,
-      ringColors: boostedColors,
-      orbitVecs: ov,
-      starVecs: sv,
+      textVecs: tv, textColors: tc,
+      ringVecs: rv, ringColors: boostedColors,
+      orbitVecs: ov, starVecs: sv,
     };
   }, [textCount, s]);
 
@@ -182,46 +173,71 @@ function ParticleDonat({ scale }: { scale: number }) {
 
   const ps = Math.max(0.05, 0.09 * s);
 
-  // ── Animation ──
+  // ── Scroll-driven animation ──
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
+    // ScrollProgress drives additional effects:
+    // 0 = top of page, 1 = bottom
+    // Hero is ~0 to ~0.2 (300vh out of ~1500vh total)
+    const sp = Math.max(0, Math.min(1, scrollProgress));
+    // Map scroll to effects: hero area = 0-0.25, rest = 0.25-1
+    const heroPhase = Math.max(0, Math.min(1, (sp - 0.25) / 0.75)); // 0 in hero, 1 after hero
 
     if (groupRef.current) {
-      groupRef.current.rotation.y += 0.004 * s;
-      groupRef.current.rotation.x = Math.sin(t * 0.12) * 0.12;
-      groupRef.current.rotation.z = Math.sin(t * 0.08) * 0.06;
-      groupRef.current.position.y = Math.sin(t * 0.15) * (0.3 * s);
+      // Base rotation slows as scroll progresses
+      const baseRotSpeed = 0.004 * s * (1 - heroPhase * 0.6);
+      groupRef.current.rotation.y += baseRotSpeed;
+
+      // Wobble dampens after hero
+      const wobbleAmount = 0.12 * (1 - heroPhase * 0.7);
+      groupRef.current.rotation.x = Math.sin(t * 0.12) * wobbleAmount;
+      groupRef.current.rotation.z = Math.sin(t * 0.08) * (wobbleAmount * 0.5);
+
+      // Float height changes with scroll
+      const floatAmp = (0.3 * s) * (1 - heroPhase * 0.5);
+      groupRef.current.position.y = Math.sin(t * 0.15) * floatAmp + heroPhase * 0.5 * s;
     }
 
-    // Wave on text
+    // Text wave — gets more intense after hero
     if (textRef.current) {
       const pos = textRef.current.geometry.attributes.position.array as Float32Array;
+      const waveAmp = (0.06 * s) * (1 + heroPhase * 2);
+      const waveFreq = 0.8 + heroPhase * 0.5;
       for (let i = 0; i < textVecs.length; i++) {
-        pos[i * 3 + 2] = textVecs[i].z + Math.sin(t * 0.8 + textVecs[i].x * 2) * 0.06 * s;
+        pos[i * 3 + 2] = textVecs[i].z + Math.sin(t * waveFreq + textVecs[i].x * 2) * waveAmp;
       }
       textRef.current.geometry.attributes.position.needsUpdate = true;
+
+      // Text sparkle on scroll
+      if (heroPhase > 0.3) {
+        (textRef.current.material as THREE.PointsMaterial).opacity =
+          0.75 + Math.sin(t * 2 + sp * 5) * 0.1;
+      } else {
+        (textRef.current.material as THREE.PointsMaterial).opacity = 0.85;
+      }
     }
 
-    // Ring pulse
+    // Ring pulse + scroll reaction
     if (ringRef.current) {
-      (ringRef.current.material as THREE.PointsMaterial).opacity = 0.35 + Math.sin(t * 0.5) * 0.1;
+      const ringPulse = 0.35 + Math.sin(t * (0.5 + sp * 0.3)) * 0.12;
+      (ringRef.current.material as THREE.PointsMaterial).opacity = ringPulse;
     }
 
-    // Orbit spin
+    // Orbit speeds up with scroll
     if (orbitRef.current) {
-      orbitRef.current.rotation.y += 0.01 * s;
-      orbitRef.current.rotation.x = Math.sin(t * 0.1) * 0.05;
+      orbitRef.current.rotation.y += (0.01 * s) * (1 + heroPhase);
+      orbitRef.current.rotation.x = Math.sin(t * 0.1) * (0.05 + heroPhase * 0.06);
     }
   });
 
   return (
     <group ref={groupRef}>
-      {/* Stars background */}
+      {/* Stars */}
       <points geometry={starGeo}>
         <pointsMaterial size={0.03} color="#555555" sizeAttenuation transparent opacity={0.3} depthWrite={false} />
       </points>
 
-      {/* Torus ring with soft glow */}
+      {/* Ring */}
       <points ref={ringRef} geometry={ringGeo}>
         <pointsMaterial
           size={ps * 1.5}
@@ -235,7 +251,7 @@ function ParticleDonat({ scale }: { scale: number }) {
         />
       </points>
 
-      {/* Orbit dots */}
+      {/* Orbit */}
       <points ref={orbitRef} geometry={orbitGeo}>
         <pointsMaterial
           size={ps * 0.8}
@@ -249,7 +265,7 @@ function ParticleDonat({ scale }: { scale: number }) {
         />
       </points>
 
-      {/* "donat" text */}
+      {/* Text */}
       <points ref={textRef} geometry={textGeo}>
         <pointsMaterial
           size={ps}
@@ -266,20 +282,20 @@ function ParticleDonat({ scale }: { scale: number }) {
   );
 }
 
-// ── Scene ──
-function SceneContent() {
+// ── Scene content ──
+function SceneContent({ scrollProgress }: { scrollProgress: number }) {
   const { viewport } = useThree();
   const scale = Math.min(1, Math.max(0.35, viewport.width / 8));
 
   return (
     <>
       <color attach="background" args={["#09090b"]} />
-      <ParticleDonat scale={scale} />
+      <ParticleDonat scale={scale} scrollProgress={scrollProgress} />
     </>
   );
 }
 
-export default function Scene() {
+export default function Scene({ scrollProgress = 0 }: { scrollProgress?: number }) {
   return (
     <div className="fixed inset-0 z-0 pointer-events-none" style={{ background: "#09090b" }}>
       <Canvas
@@ -287,7 +303,7 @@ export default function Scene() {
         dpr={[1, 1.5]}
         gl={{ antialias: true, alpha: false }}
       >
-        <SceneContent />
+        <SceneContent scrollProgress={scrollProgress} />
       </Canvas>
     </div>
   );
