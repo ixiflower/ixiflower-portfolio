@@ -10,10 +10,9 @@ const GithubIcon = ({ size = 12 }: { size?: number }) => (
 
 export default function Footer() {
   return (
-    <footer className="border-t border-border/30 py-8 px-6">
-      <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-4">
-        {/* Copyright */}
-        <p className="text-xs text-muted-foreground flex items-center gap-1">
+    <footer className="border-t border-border/30 py-6 sm:py-8 px-5 sm:px-6">
+      <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+        <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1 flex-wrap justify-center">
           Built with <Heart size={12} className="text-accent" /> by{" "}
           <a
             href="https://github.com/ixiflower"
@@ -24,19 +23,17 @@ export default function Footer() {
             ixi_flower
           </a>
         </p>
-
-        {/* Links */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 sm:gap-6">
           <a
             href="https://github.com/ixiflower"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+            className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
           >
             <GithubIcon size={12} />
             GitHub
           </a>
-          <span className="text-xs text-muted-foreground/40">
+          <span className="text-[10px] sm:text-xs text-muted-foreground/40">
             &copy; {new Date().getFullYear()}
           </span>
         </div>

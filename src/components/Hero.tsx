@@ -13,18 +13,26 @@ const GithubIcon = ({ size = 16 }: { size?: number }) => (
 
 export default function Hero() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [isTouch, setIsTouch] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
+    // Detect touch device
+    setIsTouch("ontouchstart" in window || navigator.maxTouchPoints > 0);
+
     const onMouse = (e: MouseEvent) => {
       setMousePos({
         x: (e.clientX / window.innerWidth - 0.5) * 2,
         y: (e.clientY / window.innerHeight - 0.5) * 2,
       });
     };
-    window.addEventListener("mousemove", onMouse);
+
+    // On touch devices, use device orientation or just center
+    if (!isTouch) {
+      window.addEventListener("mousemove", onMouse);
+    }
     return () => window.removeEventListener("mousemove", onMouse);
-  }, []);
+  }, [isTouch]);
 
   const scrollToAbout = () => {
     document.getElementById("about")?.scrollIntoView({ behavior: "smooth" });
@@ -34,37 +42,40 @@ export default function Hero() {
     <section
       id="hero"
       ref={sectionRef}
-      className="relative min-h-dvh flex flex-col items-center justify-center px-6 overflow-hidden"
+      className="relative min-h-dvh flex flex-col items-center justify-center px-5 sm:px-6 overflow-hidden"
     >
-      {/* Ambient glow */}
+      {/* Ambient glow - responsive sizing */}
       <div
-        className="absolute w-[600px] h-[600px] rounded-full opacity-15 pointer-events-none"
+        id="hero-glow"
+        className="absolute w-[300px] h-[300px] sm:w-[450px] sm:h-[450px] md:w-[600px] md:h-[600px] rounded-full opacity-15 pointer-events-none"
         style={{
           background:
             "radial-gradient(circle, rgba(136,85,255,0.4) 0%, transparent 70%)",
-          transform: `translate(${mousePos.x * 30}px, ${mousePos.y * 30}px)`,
+          transform: isTouch
+            ? "none"
+            : `translate(${mousePos.x * 30}px, ${mousePos.y * 30}px)`,
           transition: "transform 0.3s ease-out",
         }}
       />
 
       {/* Content */}
-      <div className="relative z-10 text-center max-w-3xl">
+      <div className="relative z-10 text-center max-w-3xl w-full">
         {/* Greeting */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-sm md:text-base font-mono text-accent mb-4 tracking-widest uppercase"
+          className="text-xs sm:text-sm md:text-base font-mono text-accent mb-3 sm:mb-4 tracking-widest uppercase"
         >
           Hello, I&apos;m
         </motion.p>
 
-        {/* Name */}
+        {/* Name - smaller on really small screens */}
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-6"
+          className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-4 sm:mb-6 leading-tight"
         >
           <span className="gradient-text">{personalData.handle}</span>
         </motion.h1>
@@ -74,7 +85,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-lg sm:text-xl md:text-2xl text-muted-foreground font-light mb-8"
+          className="text-base sm:text-lg md:text-2xl text-muted-foreground font-light mb-6 sm:mb-8"
         >
           {personalData.title}
         </motion.p>
@@ -84,7 +95,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="text-sm sm:text-base text-muted-foreground/60 max-w-xl mx-auto mb-10 leading-relaxed"
+          className="text-xs sm:text-sm md:text-base text-muted-foreground/60 max-w-xl mx-auto mb-8 sm:mb-10 leading-relaxed px-2 sm:px-0"
         >
           Self-taught developer since 2019. Building backend systems, cloud
           infrastructure, and crafting pixel-perfect frontends. Currently diving
@@ -96,11 +107,11 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="flex flex-wrap items-center justify-center gap-4"
+          className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4"
         >
           <a
             href={`mailto:${personalData.email}`}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-accent text-white text-sm font-medium hover:bg-accent-glow transition-all duration-300 animate-pulse-glow"
+            className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full bg-accent text-white text-xs sm:text-sm font-medium hover:bg-accent-glow transition-all duration-300 animate-pulse-glow w-full sm:w-auto justify-center"
           >
             <Mail size={16} />
             Get in Touch
@@ -109,7 +120,7 @@ export default function Hero() {
             href={personalData.socials.github}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-accent/50 transition-all duration-300"
+            className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full border border-border text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:border-accent/50 transition-all duration-300 w-full sm:w-auto justify-center"
           >
             <GithubIcon size={16} />
             GitHub
@@ -123,7 +134,7 @@ export default function Hero() {
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
         onClick={scrollToAbout}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 text-muted-foreground hover:text-accent transition-colors animate-bounce"
+        className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 text-muted-foreground hover:text-accent transition-colors animate-bounce"
         aria-label="Scroll down"
       >
         <ArrowDown size={24} />

@@ -17,41 +17,20 @@ const YoutubeIcon = ({ size = 18 }: { size?: number }) => (
   </svg>
 );
 
-const contactLinks = [
-  {
-    icon: Mail,
-    label: "Email",
-    href: personalData.socials.email,
-    color: "hover:text-[#EA4335]",
-  },
-  {
-    icon: GithubIcon,
-    label: "GitHub",
-    href: personalData.socials.github,
-    color: "hover:text-[#fff]",
-  },
-  {
-    icon: Send,
-    label: "Telegram",
-    href: personalData.socials.telegram,
-    color: "hover:text-[#0088cc]",
-  },
-  {
-    icon: YoutubeIcon,
-    label: "YouTube",
-    href: personalData.socials.youtube,
-    color: "hover:text-[#FF0000]",
-  },
+const contacts = [
+  { icon: Mail, label: "Email", href: `mailto:${personalData.email}`, color: "hover:text-[#EA4335]" },
+  { icon: GithubIcon, label: "GitHub", href: personalData.socials.github, color: "hover:text-[#fff]" },
+  { icon: Send, label: "Telegram", href: personalData.socials.telegram, color: "hover:text-[#0088cc]" },
+  { icon: YoutubeIcon, label: "YouTube", href: personalData.socials.youtube, color: "hover:text-[#FF0000]" },
 ];
 
 export default function Contact() {
   const ref = useRef<HTMLElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const inView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section id="contact" ref={ref} className="relative py-24 md:py-32 px-6">
+    <section id="contact" ref={ref} className="relative py-16 sm:py-24 md:py-32 px-5 sm:px-6">
       <div className="mx-auto max-w-3xl text-center">
-        {/* Section header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -60,12 +39,11 @@ export default function Contact() {
           <p className="text-xs font-mono text-accent tracking-widest uppercase mb-3">
             Contact
           </p>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-6">
+          <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4 sm:mb-6">
             Let&apos;s <span className="gradient-text">Connect</span>
           </h2>
-          <p className="text-muted-foreground max-w-lg mx-auto mb-12 leading-relaxed">
-            Whether you have a project in mind, want to collaborate, or just
-            want to say hi — my inbox is always open.
+          <p className="text-xs sm:text-sm md:text-base text-muted-foreground max-w-lg mx-auto mb-8 sm:mb-12 leading-relaxed px-2 sm:px-0">
+            Whether you have a project in mind, want to collaborate, or just want to say hi — my inbox is always open.
           </p>
         </motion.div>
 
@@ -73,23 +51,19 @@ export default function Contact() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="flex flex-wrap items-center justify-center gap-4"
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="flex flex-wrap items-center justify-center gap-3 sm:gap-4"
         >
-          {contactLinks.map((link) => (
+          {contacts.map(({ icon: Icon, label, href, color }) => (
             <a
-              key={link.label}
-              href={link.href}
-              target={link.href.startsWith("mailto") ? undefined : "_blank"}
-              rel={
-                link.href.startsWith("mailto")
-                  ? undefined
-                  : "noopener noreferrer"
-              }
-              className={`glass rounded-xl px-6 py-4 flex items-center gap-3 text-sm font-medium text-muted-foreground ${link.color} transition-all duration-300 hover:scale-105`}
+              key={label}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`glass-sm sm:glass rounded-xl px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-2 sm:gap-3 text-xs sm:text-sm font-medium text-muted-foreground ${color} transition-all duration-300 active:scale-95 hover:scale-105`}
             >
-              <link.icon size={18} />
-              {link.label}
+              <Icon size={18} />
+              {label}
             </a>
           ))}
         </motion.div>
@@ -98,12 +72,12 @@ export default function Contact() {
         <motion.p
           initial={{ opacity: 0 }}
           animate={inView ? { opacity: 1 } : {}}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="mt-10"
+          transition={{ delay: 0.4 }}
+          className="mt-8 sm:mt-10"
         >
           <a
             href={`mailto:${personalData.email}`}
-            className="text-sm font-mono text-muted-foreground hover:text-accent transition-colors"
+            className="text-xs sm:text-sm font-mono text-muted-foreground hover:text-accent transition-colors break-all"
           >
             {personalData.email}
           </a>

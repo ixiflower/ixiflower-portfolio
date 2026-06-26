@@ -41,6 +41,8 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 ::selection {
@@ -64,6 +66,13 @@ body {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(136, 85, 255, 0.1);
+}
+
+@utility glass-sm {
+  background: rgba(24, 24, 27, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(136, 85, 255, 0.08);
 }
 
 @utility glow-border {
@@ -116,4 +125,40 @@ body {
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--accent), transparent);
   opacity: 0.3;
+}
+
+/* Mobile-specific overrides */
+@media (max-width: 768px) {
+  .section-divider {
+    max-width: calc(100% - 2rem);
+  }
+}
+
+@media (max-width: 480px) {
+  .section-divider {
+    max-width: calc(100% - 1.5rem);
+  }
+}
+
+/* Safe area for the canvas on mobile */
+#hero-glow {
+  will-change: transform;
+}
+
+@media (max-width: 640px) {
+  #hero-glow {
+    width: 300px !important;
+    height: 300px !important;
+  }
+}
+
+/* Better touch handling */
+@media (hover: none) and (pointer: coarse) {
+  .hover-lift {
+    transform: none !important;
+  }
+  
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
 }

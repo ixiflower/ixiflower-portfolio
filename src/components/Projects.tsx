@@ -14,44 +14,41 @@ const GithubIcon = ({ size = 14 }: { size?: number }) => (
 const categoryColors: Record<string, string> = {
   "E-Commerce": "#a855f7",
   "Full-Stack": "#8855ff",
-  Automation: "#6366f1",
-  Tooling: "#8b5cf6",
+  "Automation": "#6366f1",
+  "Tooling": "#8b5cf6",
 };
 
 export default function Projects() {
   const ref = useRef<HTMLElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const inView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section id="projects" ref={ref} className="relative py-24 md:py-32 px-6">
+    <section id="projects" ref={ref} className="relative py-16 sm:py-24 md:py-32 px-5 sm:px-6">
       <div className="mx-auto max-w-6xl">
-        {/* Section header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
-          className="mb-16"
+          className="mb-10 sm:mb-16"
         >
-          <p className="text-xs font-mono text-accent tracking-widest uppercase mb-3">
-            Projects
-          </p>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">
+          <p className="text-xs font-mono text-accent tracking-widest uppercase mb-3">Projects</p>
+          <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold tracking-tight">
             Things I&apos;ve <span className="gradient-text">Built</span>
           </h2>
         </motion.div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {projects.map((project, i) => (
             <motion.article
               key={project.title}
               initial={{ opacity: 0, y: 30 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: i * 0.08 }}
-              className="group relative glass rounded-2xl p-6 hover:bg-card-hover transition-all duration-300 flex flex-col"
+              transition={{ duration: 0.5, delay: 0.1 * i }}
+              className="group relative glass-sm sm:glass rounded-2xl p-5 sm:p-6 hover:bg-card-hover transition-all duration-300 flex flex-col"
             >
               {/* Category badge */}
               <span
-                className="inline-flex self-start px-2.5 py-1 rounded-full text-[10px] font-mono font-medium uppercase tracking-wider mb-4"
+                className="inline-flex self-start px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-mono font-medium uppercase tracking-wider mb-3 sm:mb-4"
                 style={{
                   backgroundColor: `${categoryColors[project.category] || "#8855ff"}15`,
                   color: categoryColors[project.category] || "#8855ff",
@@ -61,29 +58,34 @@ export default function Projects() {
               </span>
 
               {/* Title */}
-              <h3 className="text-lg font-semibold mb-2 group-hover:text-accent transition-colors">
+              <h3 className="text-base sm:text-lg font-semibold mb-1.5 sm:mb-2 group-hover:text-accent transition-colors line-clamp-1">
                 {project.title}
               </h3>
 
               {/* Description */}
-              <p className="text-sm text-muted-foreground leading-relaxed mb-5 flex-1">
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed mb-4 sm:mb-5 flex-1 line-clamp-3">
                 {project.description}
               </p>
 
-              {/* Tech tags */}
-              <div className="flex flex-wrap gap-2 mb-5">
-                {project.tech.map((t) => (
+              {/* Tags */}
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-5">
+                {project.tags.slice(0, 4).map((tag) => (
                   <span
-                    key={t}
-                    className="px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-800/50 text-muted-foreground border border-border/30"
+                    key={tag}
+                    className="px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-mono bg-zinc-800/50 text-muted-foreground border border-border/30"
                   >
-                    {t}
+                    {tag}
                   </span>
                 ))}
+                {project.tags.length > 4 && (
+                  <span className="px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-mono text-muted-foreground/50">
+                    +{project.tags.length - 4}
+                  </span>
+                )}
               </div>
 
-              {/* Actions */}
-              <div className="flex items-center gap-3 pt-3 border-t border-border/30">
+              {/* Links */}
+              <div className="flex items-center gap-3 pt-3 sm:pt-3 border-t border-border/30">
                 {project.github && (
                   <a
                     href={project.github}
@@ -95,15 +97,15 @@ export default function Projects() {
                     Source
                   </a>
                 )}
-                {project.live && (
+                {project.demo && (
                   <a
-                    href={project.live}
+                    href={project.demo}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-accent transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    <ExternalLink size={14} />
-                    Live
+                    <ExternalLink size={12} />
+                    Demo
                   </a>
                 )}
               </div>
