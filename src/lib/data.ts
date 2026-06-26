@@ -46,54 +46,118 @@ export const skillTags = [
 export interface Project {
   title: string;
   description: string;
+  longDescription: string;
+  highlights: string[];
   tech: string[];
   github?: string;
   live?: string;
   category: string;
+  status: "Active" | "Archived" | "WIP";
+  year: number;
 }
 
 export const projects: Project[] = [
   {
     title: "SERENE",
     description: "Premium Shopify Hydrogen storefront with atmospheric hero, glassmorphic design, and full cart integration.",
+    longDescription: "A headless e-commerce storefront built with Shopify Hydrogen and React Router. Features a stunning atmospheric hero section with 3D-like glassmorphic design elements, smooth page transitions, and a fully integrated cart system with real-time inventory syncing.",
+    highlights: [
+      "Atmospheric hero with ambient 3D blob effects",
+      "Full cart integration with real-time sync",
+      "Glassmorphic design system with smooth animations",
+      "Responsive layout with mobile-first approach",
+      "SEO-optimized meta and structured data",
+    ],
     tech: ["TypeScript", "Hydrogen", "React Router", "Tailwind", "Shopify"],
     github: "https://github.com/ixiflower/serene",
     category: "E-Commerce",
+    status: "Active",
+    year: 2026,
   },
   {
     title: "Storipalorium",
-    description: "Modern bookmark & snippet storage platform with Neon Auth, Drizzle ORM, file tree, rooms, and category management.",
-    tech: ["Next.js", "TypeScript", "Drizzle", "Neon Auth", "Tailwind"],
+    description: "Modern bookmark & snippet storage platform with Neon Auth, Drizzle ORM, file tree, and room management.",
+    longDescription: "A full-stack bookmark and code snippet storage application with team collaboration features. Built on Next.js 16 with Neon Auth for authentication, Drizzle ORM for type-safe database queries, and a hierarchical file tree for organizing resources.",
+    highlights: [
+      "Team rooms with invite-based access control",
+      "Hierarchical file tree with drag organization",
+      "Neon Auth integration with social login support",
+      "Drizzle ORM with PostgreSQL for type-safe queries",
+      "Client-side session handling with fallbacks",
+    ],
+    tech: ["Next.js 16", "TypeScript", "Drizzle", "Neon Auth", "Tailwind"],
     github: "https://github.com/ixiflower/Storipalorium",
     category: "Full-Stack",
+    status: "Active",
+    year: 2026,
   },
   {
     title: "ifi Planner",
     description: "Interactive 3D task planner with drag-and-drop, Three.js visualization, and Django backend.",
+    longDescription: "A visually immersive task planning application that uses Three.js for 3D task visualization. Tasks appear as interactive 3D objects that can be dragged, rescheduled, and organized in a spatial environment. Backend powered by Django REST Framework.",
+    highlights: [
+      "3D task visualization with Three.js",
+      "Drag-and-drop task rearrangement",
+      "Django REST API with PostgreSQL",
+      "Real-time updates via WebSocket",
+      "Custom 3D object manipulation controls",
+    ],
     tech: ["React", "TypeScript", "Three.js", "Django", "Vite"],
     github: "https://github.com/ixiflower/planner",
     category: "Full-Stack",
+    status: "WIP",
+    year: 2026,
   },
   {
     title: "PolyBot TG",
     description: "Telegram bot for VPN/proxy automation with V2Ray config generation and connection testing.",
+    longDescription: "A fully automated Telegram bot that generates V2Ray VPN configurations on-demand, tests connection health, and manages user subscriptions. Built with Telethon for MTProto integration and featuring a modular command system.",
+    highlights: [
+      "Automated V2Ray config generation",
+      "Connection health testing and monitoring",
+      "User subscription management system",
+      "MTProto integration via Telethon",
+      "Modular command architecture",
+    ],
     tech: ["Python", "Telethon", "V2Ray"],
     github: "https://github.com/ixiflower/polybot-tg",
     category: "Automation",
+    status: "Active",
+    year: 2025,
   },
   {
     title: "Shopify Frost",
     description: "Headless Hydrogen storefront with dark/light theme toggle and glassmorphic UI components.",
+    longDescription: "A themed Shopify Hydrogen storefront showcasing advanced UI capabilities — smooth dark/light theme switching with persistent user preference storage, reusable glassmorphic component library, and optimized product discovery flow.",
+    highlights: [
+      "Dark/light theme toggle with system preference detection",
+      "Reusable glassmorphic component library",
+      "Optimized product listing with filtering",
+      "Theme-persistent user preferences",
+      "Responsive design with smooth transitions",
+    ],
     tech: ["TypeScript", "Hydrogen", "React Router", "Tailwind"],
     github: "https://github.com/ixiflower/shopify-frost",
     category: "E-Commerce",
+    status: "Archived",
+    year: 2025,
   },
   {
     title: "Python TG Bot Maker",
     description: "No-code Telegram bot creation platform with visual workflow builder.",
+    longDescription: "A drag-and-drop Telegram bot builder that lets users create complex bot workflows without writing code. Features a visual flow editor, pre-built action blocks, and one-click deployment to cloud servers.",
+    highlights: [
+      "Visual workflow builder with drag-and-drop",
+      "Pre-built action blocks library",
+      "One-click deployment pipeline",
+      "Real-time bot testing environment",
+      "User authentication and project management",
+    ],
     tech: ["Python", "React", "TypeScript", "Telegram API"],
     github: undefined,
     category: "Tooling",
+    status: "WIP",
+    year: 2025,
   },
 ];
 

@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef } from "react";
-import { motion, useInView } from "framer-motion";
-import { ExternalLink } from "lucide-react";
+import { useRef, useState } from "react";
+import { motion, useInView, AnimatePresence } from "framer-motion";
+import { ExternalLink, ChevronDown, Calendar, GitBranch, Sparkles } from "lucide-react";
 import { projects } from "@/lib/data";
 
 const GithubIcon = ({ size = 14 }: { size?: number }) => (
@@ -18,9 +18,16 @@ const categoryColors: Record<string, string> = {
   "Tooling": "#8b5cf6",
 };
 
+const statusColors: Record<string, string> = {
+  Active: "#22c55e",
+  Archived: "#71717a",
+  WIP: "#eab308",
+};
+
 export default function Projects() {
   const ref = useRef<HTMLElement>(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   return (
     <section id="projects" ref={ref} className="relative py-16 sm:py-24 md:py-32 px-5 sm:px-6">
@@ -37,77 +44,157 @@ export default function Projects() {
           </h2>
         </motion.div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
           {projects.map((project, i) => (
             <motion.article
               key={project.title}
               initial={{ opacity: 0, y: 30 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: 0.1 * i }}
-              className="group relative glass-sm sm:glass rounded-2xl p-5 sm:p-6 hover:bg-card-hover transition-all duration-300 flex flex-col"
+              className={`group relative glass-sm sm:glass rounded-2xl overflow-hidden transition-all duration-300 ${
+                expanded === project.title ? "ring-1 ring-accent/30" : ""
+              }`}
             >
-              {/* Category badge */}
-              <span
-                className="inline-flex self-start px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-mono font-medium uppercase tracking-wider mb-3 sm:mb-4"
+              {/* Gradient header bar */}
+              <div
+                className="h-1.5 w-full"
                 style={{
-                  backgroundColor: `${categoryColors[project.category] || "#8855ff"}15`,
-                  color: categoryColors[project.category] || "#8855ff",
+                  background: `linear-gradient(90deg, ${categoryColors[project.category] || "#8855ff"}, ${categoryColors[project.category] || "#8855ff"}44)`,
                 }}
-              >
-                {project.category}
-              </span>
+              />
 
-              {/* Title */}
-              <h3 className="text-base sm:text-lg font-semibold mb-1.5 sm:mb-2 group-hover:text-accent transition-colors line-clamp-1">
-                {project.title}
-              </h3>
-
-              {/* Description */}
-              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed mb-4 sm:mb-5 flex-1 line-clamp-3">
-                {project.description}
-              </p>
-
-              {/* Tags */}
-              <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-5">
-                {project.tech.slice(0, 4).map((tag) => (
+              <div className="p-5 sm:p-6 flex flex-col">
+                {/* Top row: category + status */}
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
                   <span
-                    key={tag}
-                    className="px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-mono bg-zinc-800/50 text-muted-foreground border border-border/30"
+                    className="inline-flex px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-mono font-medium uppercase tracking-wider"
+                    style={{
+                      backgroundColor: `${categoryColors[project.category] || "#8855ff"}15`,
+                      color: categoryColors[project.category] || "#8855ff",
+                    }}
                   >
-                    {tag}
+                    {project.category}
                   </span>
-                ))}
-                {project.tech.length > 4 && (
-                  <span className="px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-mono text-muted-foreground/50">
-                    +{project.tech.length - 4}
+                  <span
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-mono"
+                    style={{
+                      backgroundColor: `${statusColors[project.status]}15`,
+                      color: statusColors[project.status],
+                    }}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: statusColors[project.status] }} />
+                    {project.status}
                   </span>
-                )}
-              </div>
+                </div>
 
-              {/* Links */}
-              <div className="flex items-center gap-3 pt-3 sm:pt-3 border-t border-border/30">
-                {project.github && (
-                  <a
-                    href={project.github}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                {/* Title */}
+                <h3 className="text-base sm:text-lg font-semibold mb-1.5 group-hover:text-accent transition-colors">
+                  {project.title}
+                </h3>
+
+                {/* Short description */}
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed mb-3 line-clamp-2">
+                  {project.description}
+                </p>
+
+                {/* Year badge */}
+                <div className="flex items-center gap-1.5 mb-3 text-[10px] sm:text-xs text-muted-foreground/60">
+                  <Calendar size={10} />
+                  <span>{project.year}</span>
+                </div>
+
+                {/* Expandable details */}
+                <AnimatePresence>
+                  {expanded === project.title && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="pt-2 pb-3 space-y-3 border-t border-border/20">
+                        {/* Long description */}
+                        <p className="text-[11px] sm:text-xs text-muted-foreground/70 leading-relaxed">
+                          {project.longDescription}
+                        </p>
+
+                        {/* Highlights */}
+                        <div>
+                          <p className="text-[10px] sm:text-[11px] font-mono text-accent/80 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                            <Sparkles size={10} />
+                            Key Features
+                          </p>
+                          <ul className="space-y-1">
+                            {project.highlights.map((h, idx) => (
+                              <li key={idx} className="flex items-start gap-1.5 text-[10px] sm:text-[11px] text-muted-foreground/70">
+                                <span className="mt-0.5 w-1 h-1 rounded-full bg-accent/40 shrink-0" />
+                                {h}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Tags */}
+                <div className="flex flex-wrap gap-1.5 mb-3 sm:mb-4 mt-auto">
+                  {project.tech.slice(0, 6).map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-mono bg-zinc-800/50 text-muted-foreground border border-border/30"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                  {project.tech.length > 6 && (
+                    <span className="px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-mono text-muted-foreground/50">
+                      +{project.tech.length - 6}
+                    </span>
+                  )}
+                </div>
+
+                {/* Actions row */}
+                <div className="flex items-center justify-between pt-3 border-t border-border/30">
+                  <div className="flex items-center gap-3">
+                    {project.github && (
+                      <a
+                        href={project.github}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <GithubIcon size={13} />
+                        Source
+                      </a>
+                    )}
+                    {project.live && (
+                      <a
+                        href={project.live}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <ExternalLink size={11} />
+                        Demo
+                      </a>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setExpanded(expanded === project.title ? null : project.title)}
+                    className="inline-flex items-center gap-1 text-[11px] sm:text-xs text-muted-foreground hover:text-accent transition-colors"
                   >
-                    <GithubIcon size={14} />
-                    Source
-                  </a>
-                )}
-                {project.live && (
-                  <a
-                    href={project.live}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <ExternalLink size={12} />
-                    Demo
-                  </a>
-                )}
+                    <span>{expanded === project.title ? "Less" : "More"}</span>
+                    <ChevronDown
+                      size={11}
+                      className={`transition-transform duration-300 ${
+                        expanded === project.title ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
             </motion.article>
           ))}
