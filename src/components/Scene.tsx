@@ -47,7 +47,7 @@ function HeroObject() {
     const pos = new Float32Array(particleCount * 3);
     for (let i = 0; i < particleCount; i++) {
       // Distribute on a sphere surface
-      const radius = 1.8 + Math.random() * 0.5;
+      const radius = 1.2 + Math.random() * 0.4;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
       pos[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
@@ -157,7 +157,7 @@ function HeroObject() {
         floatIntensity={0.8}
       >
         <mesh ref={meshRef}>
-          <torusKnotGeometry args={[1, 0.35, 256, 64]} />
+          <torusKnotGeometry args={[0.7, 0.25, 256, 64]} />
           <MeshTransmissionMaterial
             backside
             samples={8}
@@ -177,7 +177,7 @@ function HeroObject() {
 
       {/* Inner core glow */}
       <mesh>
-        <sphereGeometry args={[0.15, 16, 16]} />
+        <sphereGeometry args={[0.1, 16, 16]} />
         <meshBasicMaterial
           color="#aa66ff"
           transparent
@@ -240,8 +240,8 @@ function SceneContent() {
 
   return (
     <>
-      <color attach="background" args={["#09090b"]} />
-      <fog attach="fog" args={["#09090b", 8, 15]} />
+      <color attach="background" args={["#000000"]} />
+      <fog attach="fog" args={["#000000", 8, 15]} />
       <ambientLight intensity={0.5} />
       <directionalLight position={[5, 5, 5]} intensity={2} />
       <directionalLight position={[-5, -3, -5]} intensity={1} color="#6644ff" />
@@ -257,7 +257,7 @@ function SceneContent() {
 
 export default function Scene() {
   return (
-    <div className="fixed inset-0 z-0 pointer-events-none" style={{ background: "#09090b" }}>
+    <div className="fixed inset-0 z-0 pointer-events-none" style={{ background: "#000000" }}>
       <Canvas
         camera={{ position: [0, 0, 4], fov: 50, near: 0.1, far: 20 }}
         dpr={[1, 1.5]}
