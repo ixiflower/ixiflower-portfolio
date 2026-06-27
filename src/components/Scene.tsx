@@ -1,10 +1,16 @@
 "use client";
 
-import { useRef, useMemo, useCallback } from "react";
+import { useRef, useMemo, useCallback, useEffect, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import {
+  MeshTransmissionMaterial,
+  Float,
+  Environment,
+  useCursor,
+} from "@react-three/drei";
 import * as THREE from "three";
 
-// ─── Soft circle particle texture ───
+// ─── Soft glow particle texture ───
 function createGlowTexture(): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = 128;
@@ -12,9 +18,8 @@ function createGlowTexture(): THREE.CanvasTexture {
   const ctx = canvas.getContext("2d")!;
   const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
   gradient.addColorStop(0, "rgba(255,255,255,1)");
-  gradient.addColorStop(0.1, "rgba(255,255,255,0.9)");
-  gradient.addColorStop(0.3, "rgba(255,255,255,0.6)");
-  gradient.addColorStop(0.6, "rgba(255,255,255,0.25)");
+  gradient.addColorStop(0.2, "rgba(255,255,255,0.8)");
+  gradient.addColorStop(0.5, "rgba(255,255,255,0.3)");
   gradient.addColorStop(1, "rgba(255,255,255,0)");
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, 128, 128);
@@ -23,340 +28,229 @@ function createGlowTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-// ─── Spiral galaxy generator ───
-function generateGalaxy(
-  count: number,
-  arms: number,
-  radius: number,
-  twist: number,
-  thickness: number,
-  spread: number
-): Float32Array {
-  const pos = new Float32Array(count * 3);
-  const colors = new Float32Array(count * 3);
-  const sizes = new Float32Array(count);
-
-  const purpleCore = new THREE.Color(0.55, 0.25, 0.95);
-  const pinkMid = new THREE.Color(0.95, 0.35, 0.65);
-  const blueOuter = new THREE.Color(0.25, 0.45, 0.95);
-
-  for (let i = 0; i < count; i++) {
-    // Distance from center (more particles clustered near center)
-    const dist = Math.pow(Math.random(), 1.5) * radius;
-    const distNorm = dist / radius;
-
-    // Spiral arm angle
-    const armIndex = Math.floor(Math.random() * arms);
-    const armAngle = (armIndex / arms) * Math.PI * 2;
-    const angle = armAngle + dist * twist + (Math.random() - 0.5) * spread * (1 - distNorm * 0.5);
-
-    // Position
-    const x = Math.cos(angle) * dist;
-    const z = Math.sin(angle) * dist;
-    const y = (Math.random() - 0.5) * thickness * (1 - distNorm * 0.7);
-
-    pos[i * 3] = x;
-    pos[i * 3 + 1] = y;
-    pos[i * 3 + 2] = z;
-
-    // Color: purple core → pink mid → blue outer
-    let col: THREE.Color;
-    if (distNorm < 0.3) {
-      const t = distNorm / 0.3;
-      col = purpleCore.clone().lerp(pinkMid, t);
-    } else {
-      const t = (distNorm - 0.3) / 0.7;
-      col = pinkMid.clone().lerp(blueOuter, t);
-    }
-
-    // Random brightness variation
-    const brightness = 0.7 + Math.random() * 0.3;
-    colors[i * 3] = col.r * brightness;
-    colors[i * 3 + 1] = col.g * brightness;
-    colors[i * 3 + 2] = col.b * brightness;
-
-    // Size: larger in center, smaller at edges
-    sizes[i] = (0.03 + 0.06 * (1 - distNorm)) * (0.5 + Math.random() * 0.5);
-  }
-
-  return pos;
-}
-
-// ─── Star field ───
-function generateStars(count: number, bound: number): Float32Array {
-  const pos = new Float32Array(count * 3);
-  for (let i = 0; i < count; i++) {
-    pos[i * 3] = (Math.random() - 0.5) * bound;
-    pos[i * 3 + 1] = (Math.random() - 0.5) * bound * 0.4;
-    pos[i * 3 + 2] = (Math.random() - 0.5) * bound * 0.6 - bound * 0.3;
-  }
-  return pos;
-}
-
-// ─── Neural connections ───
-function generateConnections(
-  pos: Float32Array,
-  count: number,
-  maxDist: number,
-  maxLines: number
-): { indices: number[]; alphas: number[] } {
-  const indices: number[] = [];
-  const alphas: number[] = [];
-
-  // Only check a subset for performance
-  const step = Math.max(1, Math.floor(count / 300));
-  const points: { x: number; y: number; z: number }[] = [];
-
-  for (let i = 0; i < count; i += step) {
-    points.push({
-      x: pos[i * 3],
-      y: pos[i * 3 + 1],
-      z: pos[i * 3 + 2],
-    });
-  }
-
-  for (let i = 0; i < points.length && indices.length < maxLines * 2; i++) {
-    for (let j = i + 1; j < points.length && indices.length < maxLines * 2; j++) {
-      const dx = points[i].x - points[j].x;
-      const dy = points[i].y - points[j].y;
-      const dz = points[i].z - points[j].z;
-      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-      if (dist < maxDist) {
-        indices.push(i * step, j * step);
-        alphas.push(1 - dist / maxDist);
-      }
-    }
-  }
-
-  return { indices, alphas };
-}
-
-// ─── Main galaxy component ───
-function NebulaGalaxy() {
-  const galaxyRef = useRef<THREE.Points>(null);
-  const starRef = useRef<THREE.Points>(null);
-  const lineRef = useRef<THREE.LineSegments>(null);
+// ─── Main 3D Object ───
+function HeroObject() {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const orbRef = useRef<THREE.Points>(null);
   const groupRef = useRef<THREE.Group>(null);
-  
-  // Mouse tracking
   const mouseRef = useRef({ x: 0, y: 0 });
+  const targetRot = useRef({ x: 0, y: 0 });
+  const [hovered, setHovered] = useState(false);
+
+  useCursor(hovered);
 
   const tex = useMemo(() => createGlowTexture(), []);
 
-  // Galaxy particles
-  const galaxyData = useMemo(() => {
-    const count = 6000;
-    const pos = generateGalaxy(count, 3, 6, 3.5, 0.3, 0.6);
+  // Orbiting particles around the object
+  const particleCount = 800;
+  const particlePos = useMemo(() => {
+    const pos = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+      // Distribute on a sphere surface
+      const radius = 1.8 + Math.random() * 0.5;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      pos[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+      pos[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+      pos[i * 3 + 2] = radius * Math.cos(phi);
+    }
+    return pos;
+  }, []);
 
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-
-    // Colors
-    const colors = new Float32Array(count * 3);
-    const purpleCore = new THREE.Color(0.55, 0.25, 0.95);
-    const pinkMid = new THREE.Color(0.95, 0.35, 0.65);
-    const blueOuter = new THREE.Color(0.25, 0.45, 0.95);
-
-    for (let i = 0; i < count; i++) {
-      const x = pos[i * 3];
-      const z = pos[i * 3 + 2];
-      const dist = Math.sqrt(x * x + z * z);
-      const distNorm = Math.min(1, dist / 6);
-
+  const particleColors = useMemo(() => {
+    const colors = new Float32Array(particleCount * 3);
+    const purple = new THREE.Color(0.5, 0.2, 0.9);
+    const pink = new THREE.Color(0.9, 0.3, 0.6);
+    const blue = new THREE.Color(0.2, 0.5, 1.0);
+    for (let i = 0; i < particleCount; i++) {
+      const t = Math.random();
       let col: THREE.Color;
-      if (distNorm < 0.3) {
-        const t = distNorm / 0.3;
-        col = purpleCore.clone().lerp(pinkMid, t);
-      } else {
-        const t = (distNorm - 0.3) / 0.7;
-        col = pinkMid.clone().lerp(blueOuter, t);
-      }
-      const brightness = 0.7 + Math.random() * 0.3;
-      colors[i * 3] = col.r * brightness;
-      colors[i * 3 + 1] = col.g * brightness;
-      colors[i * 3 + 2] = col.b * brightness;
+      if (t < 0.5) col = purple.clone().lerp(pink, t * 2);
+      else col = pink.clone().lerp(blue, (t - 0.5) * 2);
+      colors[i * 3] = col.r * (0.6 + Math.random() * 0.4);
+      colors[i * 3 + 1] = col.g * (0.6 + Math.random() * 0.4);
+      colors[i * 3 + 2] = col.b * (0.6 + Math.random() * 0.4);
     }
-    geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-
-    // Sizes
-    const sizes = new Float32Array(count);
-    for (let i = 0; i < count; i++) {
-      const x = pos[i * 3];
-      const z = pos[i * 3 + 2];
-      const dist = Math.sqrt(x * x + z * z);
-      const distNorm = Math.min(1, dist / 6);
-      sizes[i] = (0.03 + 0.07 * (1 - distNorm)) * (0.5 + Math.random() * 0.5);
-    }
-    geo.setAttribute("size", new THREE.BufferAttribute(sizes, 1));
-
-    return { pos, geo };
+    return colors;
   }, []);
 
-  // Stars
-  const starGeo = useMemo(() => {
-    const pos = generateStars(800, 30);
+  const particleGeo = useMemo(() => {
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute("position", new THREE.BufferAttribute(particlePos, 3));
+    geo.setAttribute("color", new THREE.BufferAttribute(particleColors, 3));
     return geo;
-  }, []);
+  }, [particlePos, particleColors]);
 
-  // Neural connections
-  const lineData = useMemo(() => {
-    const { indices, alphas } = generateConnections(
-      galaxyData.pos,
-      galaxyData.pos.length / 3,
-      0.8,
-      200
-    );
-
-    if (indices.length === 0) return null;
-
-    const positions = new Float32Array(indices.length * 3);
-    for (let i = 0; i < indices.length; i++) {
-      positions[i * 3] = galaxyData.pos[indices[i] * 3];
-      positions[i * 3 + 1] = galaxyData.pos[indices[i] * 3 + 1];
-      positions[i * 3 + 2] = galaxyData.pos[indices[i] * 3 + 2];
-    }
-
-    const color = new Float32Array(indices.length * 3);
-    for (let i = 0; i < indices.length; i++) {
-      const alpha = alphas[Math.floor(i / 2)];
-      const c = new THREE.Color(0.45, 0.2, 0.85).lerp(
-        new THREE.Color(0.8, 0.3, 0.6),
-        Math.random()
-      );
-      color[i * 3] = c.r * alpha * 0.5;
-      color[i * 3 + 1] = c.g * alpha * 0.5;
-      color[i * 3 + 2] = c.b * alpha * 0.5;
-    }
-
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    geo.setAttribute("color", new THREE.BufferAttribute(color, 3));
-    return geo;
-  }, [galaxyData]);
-
-  // Individual particle speeds (for orbital motion)
-  const speeds = useMemo(() => {
-    const arr = new Float32Array(galaxyData.pos.length / 3);
-    for (let i = 0; i < arr.length; i++) {
-      const x = galaxyData.pos[i * 3];
-      const z = galaxyData.pos[i * 3 + 2];
-      const dist = Math.sqrt(x * x + z * z);
-      // Inner particles orbit faster (Keplerian)
-      arr[i] = 0.3 / (0.3 + dist * 0.2) + (Math.random() - 0.5) * 0.2;
-    }
-    return arr;
-  }, [galaxyData]);
-
-  // Mouse listener
-  const onPointerMove = useCallback((e: { clientX: number; clientY: number }) => {
+  // Mouse handler
+  const onPointerMove = useCallback((e: any) => {
     mouseRef.current.x = (e.clientX / window.innerWidth - 0.5) * 2;
     mouseRef.current.y = (e.clientY / window.innerHeight - 0.5) * 2;
+  }, []);
+
+  // Random orbital parameters for each particle
+  const particleData = useMemo(() => {
+    const speeds = new Float32Array(particleCount);
+    const offsets = new Float32Array(particleCount);
+    for (let i = 0; i < particleCount; i++) {
+      speeds[i] = 0.2 + Math.random() * 0.8;
+      offsets[i] = Math.random() * Math.PI * 2;
+    }
+    return { speeds, offsets };
   }, []);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     const mouse = mouseRef.current;
 
-    // Galaxy rotation + mouse parallax
+    // Smooth mouse follow for the group
+    targetRot.current.y += (mouse.x * 0.5 - targetRot.current.y) * 0.03;
+    targetRot.current.x += (-mouse.y * 0.3 - targetRot.current.x) * 0.03;
+
     if (groupRef.current) {
-      // Slow base rotation
-      groupRef.current.rotation.y += 0.002;
-      // Mouse parallax (subtle tilt)
-      groupRef.current.rotation.x += (mouse.y * 0.08 - groupRef.current.rotation.x) * 0.005;
-      groupRef.current.rotation.z += (-mouse.x * 0.05 - groupRef.current.rotation.z) * 0.005;
+      groupRef.current.rotation.y = targetRot.current.y + t * 0.15;
+      groupRef.current.rotation.x = targetRot.current.x + Math.sin(t * 0.1) * 0.05;
     }
 
-    // Individual particle orbital motion (differential rotation)
-    if (galaxyRef.current) {
-      const pos = galaxyRef.current.geometry.attributes.position.array as Float32Array;
-      for (let i = 0; i < speeds.length; i++) {
-        const speed = speeds[i] * 0.003;
-        const x = pos[i * 3];
-        const z = pos[i * 3 + 2];
-        const dist = Math.sqrt(x * x + z * z);
-        if (dist < 0.01) continue;
-        const angle = Math.atan2(z, x) + speed;
-        pos[i * 3] = Math.cos(angle) * dist;
-        pos[i * 3 + 2] = Math.sin(angle) * dist;
-        // Gentle Y wobble
-        pos[i * 3 + 1] += (Math.sin(t * 0.3 + i * 0.01) * 0.001 - pos[i * 3 + 1] * 0.001);
+    // Pulse the object slightly
+    if (meshRef.current) {
+      const scale = 1 + Math.sin(t * 0.5) * 0.015;
+      meshRef.current.scale.setScalar(scale);
+    }
+
+    // Animate orbiting particles
+    if (orbRef.current) {
+      const pos = orbRef.current.geometry.attributes.position.array as Float32Array;
+      for (let i = 0; i < particleCount; i++) {
+        const speed = particleData.speeds[i] * 0.005;
+        const offset = particleData.offsets[i];
+        const radius = Math.sqrt(
+          particlePos[i * 3] ** 2 +
+          particlePos[i * 3 + 1] ** 2 +
+          particlePos[i * 3 + 2] ** 2
+        );
+
+        // Simple rotation around Y axis with individual speeds
+        const theta = Math.atan2(particlePos[i * 3 + 2], particlePos[i * 3]) + speed;
+        const phi = Math.acos(
+          Math.min(1, Math.max(-1, particlePos[i * 3 + 1] / radius))
+        ) + speed * 0.3 * Math.sin(offset + t * 0.2);
+
+        pos[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+        pos[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+        pos[i * 3 + 2] = radius * Math.cos(phi);
       }
-      galaxyRef.current.geometry.attributes.position.needsUpdate = true;
-    }
-
-    // Star twinkle
-    if (starRef.current) {
-      (starRef.current.material as THREE.PointsMaterial).opacity =
-        0.3 + Math.sin(t * 0.5) * 0.1;
+      orbRef.current.geometry.attributes.position.needsUpdate = true;
     }
   });
 
   return (
-    <group ref={groupRef}>
-      {/* Background stars */}
-      <points ref={starRef} geometry={starGeo}>
-        <pointsMaterial
-          size={0.02}
-          color="#888899"
-          transparent
-          opacity={0.35}
-          sizeAttenuation
-          depthWrite={false}
-        />
-      </points>
-
-      {/* Neural connections */}
-      {lineData && (
-        <lineSegments ref={lineRef as any} geometry={lineData}>
-          <lineBasicMaterial
-            vertexColors
-            transparent
-            opacity={0.3}
-            depthWrite={false}
-          />
-        </lineSegments>
-      )}
-
-      {/* Galaxy particles */}
-      <points
-        ref={galaxyRef}
-        geometry={galaxyData.geo}
-        onPointerMove={onPointerMove}
+    <group
+      ref={groupRef}
+      onPointerMove={onPointerMove}
+      onPointerOver={() => setHovered(true)}
+      onPointerOut={() => setHovered(false)}
+    >
+      {/* Main glass torus knot */}
+      <Float
+        speed={2}
+        rotationIntensity={0.3}
+        floatIntensity={0.8}
       >
+        <mesh ref={meshRef}>
+          <torusKnotGeometry args={[1, 0.35, 256, 64]} />
+          <MeshTransmissionMaterial
+            backside
+            samples={8}
+            thickness={0.6}
+            chromaticAberration={0.08}
+            anisotropy={0.5}
+            distortion={0.1}
+            distortionScale={0.3}
+            temporalDistortion={0.05}
+            color="#8855ff"
+            metalness={0.1}
+            roughness={0.2}
+            ior={1.5}
+          />
+        </mesh>
+      </Float>
+
+      {/* Inner core glow */}
+      <mesh>
+        <sphereGeometry args={[0.15, 16, 16]} />
+        <meshBasicMaterial
+          color="#aa66ff"
+          transparent
+          opacity={0.4}
+        />
+      </mesh>
+
+      {/* Orbiting particles */}
+      <points ref={orbRef} geometry={particleGeo}>
         <pointsMaterial
-          size={0.1}
+          size={0.025}
           map={tex}
           vertexColors
           transparent
-          opacity={0.9}
+          opacity={0.7}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           sizeAttenuation
         />
       </points>
-
-      {/* Bright core glow */}
-      <mesh>
-        <sphereGeometry args={[0.2, 16, 16]} />
-        <meshBasicMaterial
-          color="#7744ff"
-          transparent
-          opacity={0.15}
-        />
-      </mesh>
     </group>
+  );
+}
+
+// ─── Background stars ───
+function StarField() {
+  const count = 1000;
+  const pos = useMemo(() => {
+    const p = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      p[i * 3] = (Math.random() - 0.5) * 30;
+      p[i * 3 + 1] = (Math.random() - 0.5) * 30;
+      p[i * 3 + 2] = (Math.random() - 0.5) * 30 - 10;
+    }
+    return p;
+  }, []);
+  const geo = useMemo(() => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    return g;
+  }, [pos]);
+
+  return (
+    <points geometry={geo}>
+      <pointsMaterial
+        size={0.015}
+        color="#8888aa"
+        transparent
+        opacity={0.4}
+        sizeAttenuation
+        depthWrite={false}
+      />
+    </points>
   );
 }
 
 // ─── Scene ───
 function SceneContent() {
+  const { viewport } = useThree();
+
   return (
     <>
       <color attach="background" args={["#09090b"]} />
-      <fog attach="fog" args={["#09090b", 10, 18]} />
-      <NebulaGalaxy />
+      <fog attach="fog" args={["#09090b", 8, 15]} />
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[5, 5, 5]} intensity={2} />
+      <directionalLight position={[-5, -3, -5]} intensity={1} color="#6644ff" />
+
+      {/* Environment for reflections */}
+      <Environment preset="city" />
+
+      <HeroObject />
+      <StarField />
     </>
   );
 }
@@ -365,7 +259,7 @@ export default function Scene() {
   return (
     <div className="fixed inset-0 z-0 pointer-events-none" style={{ background: "#09090b" }}>
       <Canvas
-        camera={{ position: [0, 1.5, 5], fov: 55, near: 0.1, far: 25 }}
+        camera={{ position: [0, 0, 4], fov: 50, near: 0.1, far: 20 }}
         dpr={[1, 1.5]}
         gl={{ antialias: true, alpha: false }}
         style={{ touchAction: "none" }}
